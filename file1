@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create EC2 Instance and CloudFront Distribution
+
+Resources:
+  # Create an EC2 instance
+  MyEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0c55b159cbfafe1f0  # Update with your preferred AMI ID
+      KeyName: my-key-pair  # Replace with your EC2 key pair name
+      SecurityGroups:
+        - Ref: InstanceSecurityGroup
+      Tags:
+        - Key: Name
+          Value: MyEC2Instance
+
+  # Create a security group for the EC2 instance
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0  # Open to the world; adjust as necessary
+          
+  # Create a CloudFront Distribution
+  MyCloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: MyS3Origin
+            DomainName: "my-bucket-name.s3.amazonaws.com"  # Replace with your S3 bucket
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        Enabled: 'true'
+        DefaultCacheBehavior:
+          TargetOriginId: MyS3Origin
+          ViewerProtocolPolicy: allow-all
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+        DefaultRootObject: index.html
+
+Outputs:
+  EC2InstanceId:
+    Description: The EC2 Instance ID
+    Value: !Ref MyEC2Instance
+  CloudFrontDistributionDomainName:
+    Description: CloudFront Distribution Domain Name
+    Value: !GetAtt MyCloudFrontDistribution.DomainName
