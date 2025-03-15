@@ -1,0 +1,84 @@
+# Project Documentation: Deploying a Node.js Application with MySQL Database
+
+## Step 1: Create a MySQL Database in AWS RDS
+
+1. Go to the AWS Management Console.
+2. Navigate to **RDS** and click on **Create database**.
+3. Select **MySQL** as the database engine.
+4. Choose **Standard create** and select the latest MySQL version.
+5. Under Settings:
+   - DB Identifier: `database-1`
+   - Master Username: `admin`
+   - Master Password: `admin123`
+6. Configure connectivity:
+   - Select **VPC** and **Subnet Group** as per your AWS setup.
+   - Set **Public access** to `Yes` (if accessing from external sources).
+   - Choose or create a **Security Group**.
+7. Add **Inbound Rules** to Security Group:
+   - Allow **TCP 3306** from your EC2 instance's IP.
+8. Click **Create database** and wait for it to become `Available`.
+
+## Step 2: Launch an Amazon Linux EC2 Instance
+
+1. Go to **EC2** and launch a new instance.
+2. Choose **Amazon Linux 2 AMI**.
+3. Select an instance type (e.g., `t2.micro`).
+4. Configure Security Group:
+   - Add **TCP 3306** (MySQL) and allow connections from the database.
+   - Add **TCP 80** (HTTP) for web access.
+   - Add **TCP 22** (SSH) to access the instance.
+5. Launch the instance and connect via SSH.
+
+## Step 3: Install Docker on EC2
+
+Run the following commands on your EC2 instance:
+```sh
+sudo yum install docker -y
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+## Step 4: Pull the Node.js Application Docker Image
+
+```sh
+sudo docker pull philippaul/node-mysql-app:02
+```
+Check if the image is downloaded:
+```sh
+sudo docker images
+```
+
+## Step 5: Run the Node.js Application Container
+
+Replace `<DB_ENDPOINT>` with your actual RDS endpoint.
+```sh
+sudo docker run --rm -p 80:3000 \
+-e DB_HOST="database-1.cpwg24qawwl1.us-east-1.rds.amazonaws.com" \
+-e DB_USER="admin" \
+-e DB_PASSWORD="admin123" \
+-d philippaul/node-mysql-app:02
+```
+Check running containers:
+```sh
+sudo docker ps
+```
+Check logs to verify database connectivity:
+```sh
+sudo docker logs -f <container_id>
+```
+
+## Step 6: Install MySQL Client in a Docker Container
+
+```sh
+sudo docker run -it --rm mysql:8.0 mysql -h database-1.cpwg24qawwl1.us-east-1.rds.amazonaws.com -u admin -p
+```
+Enter the MySQL password (`admin123`) when prompted.
+
+## Conclusion
+- The database is hosted on AWS RDS.
+- The EC2 instance runs the Node.js application.
+- Docker manages the application container.
+- Ports **3306** (MySQL) and **80** (HTTP) are configured correctly for communication.
+
+This setup ensures that your application connects successfully to the MySQL database and serves requests on port 80.
+
